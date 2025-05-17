@@ -63,6 +63,27 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
 
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:postgres@postgres:5432/taskdb?sslmode=disable"
+    depends_on:
+      - postgres
+
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter
+    container_name: rabbitmq-exporter
+    ports:
+      - "9419:9419"
+    environment:
+      RABBIT_URL: http://guest:guest@rabbitmq:15672
+    depends_on:
+      - rabbitmq
+
+
 volumes:
   pg_data:
   grafana-storage:

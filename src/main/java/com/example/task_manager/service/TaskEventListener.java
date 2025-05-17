@@ -11,6 +11,5 @@ public class TaskEventListener {
     @RabbitListener(queues = RabbitMQConfig.QUEUE)
     public void handleTaskCreated(Task task) {
         System.out.println("Received Task Event: " + task.getTitle());
-        // Здесь можно добавить запись в лог, аудит, уведомление и т.д.
     }
 }

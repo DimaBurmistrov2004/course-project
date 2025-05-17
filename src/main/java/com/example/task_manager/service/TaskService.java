@@ -1,5 +1,6 @@
 package com.example.task_manager.service;
 
+import com.example.task_manager.metrics.TaskMetricsService;
 import com.example.task_manager.model.Task;
 import com.example.task_manager.repository.TaskRepository;
 import org.springframework.cache.annotation.CacheEvict;
@@ -14,10 +15,14 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final TaskEventPublisher taskEventPublisher;
+    private final TaskMetricsService metricsService;
 
-    public TaskService(TaskRepository taskRepository, TaskEventPublisher taskEventPublisher) {
+    public TaskService(TaskRepository taskRepository,
+                       TaskEventPublisher taskEventPublisher,
+                       TaskMetricsService metricsService) {
         this.taskRepository = taskRepository;
         this.taskEventPublisher = taskEventPublisher;
+        this.metricsService = metricsService;
     }
 
     @Cacheable("tasks")
@@ -32,11 +37,13 @@ public class TaskService {
 
     @CacheEvict(value = "tasks", allEntries = true)
     public Task createTask(Task task) {
-        Task savedTask = taskRepository.save(task);
-
-        taskEventPublisher.sendTaskCreatedEvent(savedTask);
-
-        return savedTask;
+        return metricsService.getTaskCreationTimer().record(() -> {
+            Task savedTask = taskRepository.save(task);
+            taskEventPublisher.sendTaskCreatedEvent(savedTask);
+            metricsService.incrementCreatedTasks();
+            metricsService.incrementActiveTasks();
+            return savedTask;
+        });
     }
 
     @CacheEvict(value = "tasks", allEntries = true)
@@ -52,5 +59,6 @@ public class TaskService {
     @CacheEvict(value = "tasks", allEntries = true)
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
+        metricsService.decrementActiveTasks();
     }
 }
